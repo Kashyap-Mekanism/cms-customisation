@@ -1,0 +1,241 @@
+/* PRO LEVEL KUBERA SCSS */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-body: 'Inter', system-ui, sans-serif !important;
+  --font-heading: 'Outfit', system-ui, sans-serif !important;
+}
+
+html[data-theme='light'] {
+  --theme-bg: #f8fafc; /* Beautiful soft slate-50 */
+  --theme-elevation-0: #ffffff;
+  --theme-elevation-50: #ffffff;
+  --theme-elevation-100: #f1f5f9;
+  --theme-elevation-150: #e2e8f0;
+  --theme-elevation-200: #cbd5e1;
+  --theme-elevation-300: #94a3b8;
+  --theme-elevation-400: #64748b;
+  --theme-elevation-500: #475569;
+  --theme-elevation-800: #0f172a;
+  --theme-elevation-900: #020617;
+  
+  --theme-error-400: #ef4444;
+  --theme-success-400: #10b981;
+  
+  --kubera-blue: #2563eb;
+  --kubera-blue-hover: #1d4ed8;
+  --kubera-blue-light: #eff6ff;
+}
+
+html[data-theme='dark'] {
+  --theme-bg: #0b1121; /* Pro dark navy */
+  --theme-elevation-0: #131b2f;
+  --theme-elevation-50: #1a233a;
+  --theme-elevation-100: #222d48;
+  --theme-elevation-150: #2d3b5b;
+  --theme-elevation-200: #3b4b72;
+  --theme-elevation-300: #4b5d89;
+  --theme-elevation-400: #94a3b8;
+  --theme-elevation-500: #cbd5e1;
+  --theme-elevation-800: #f8fafc;
+  --theme-elevation-900: #ffffff;
+  
+  --theme-error-400: #f87171;
+  --theme-success-400: #34d399;
+  
+  --kubera-blue: #3b82f6;
+  --kubera-blue-hover: #60a5fa;
+  --kubera-blue-light: rgba(59, 130, 246, 0.1);
+}
+
+body {
+  font-family: var(--font-body) !important;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--theme-bg) !important;
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6, .template-list__header {
+  font-family: var(--font-heading) !important;
+  letter-spacing: -0.02em !important;
+  font-weight: 600 !important;
+}
+
+/* Smooth Background Gradients (Pro Aesthetic) */
+.payload {
+  background: radial-gradient(circle at top left, var(--kubera-blue-light), transparent 50%),
+              radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.03), transparent 50%) !important;
+  background-color: var(--theme-bg) !important;
+}
+
+/* Sidebar Navigation Styling */
+.nav {
+  background: var(--theme-elevation-0) !important;
+  border-right: 1px solid var(--theme-elevation-100) !important;
+  padding-top: 1rem !important;
+}
+
+.nav a {
+  border-radius: 8px !important;
+  margin: 0.25rem 1rem !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease !important;
+  color: var(--theme-elevation-500) !important;
+  font-weight: 500 !important;
+}
+.nav a:hover,
+.nav a.active {
+  background: var(--kubera-blue-light) !important;
+  color: var(--kubera-blue) !important;
+  transform: translateX(4px) !important;
+}
+
+/* Pro Header */
+.payload__app-header {
+  background: rgba(var(--theme-elevation-0-rgb, 255, 255, 255), 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--theme-elevation-100) !important;
+  box-shadow: 0 4px 20px -5px rgba(0,0,0,0.02) !important;
+  z-index: 50 !important;
+}
+
+/* Pro Forms */
+.payload__field input[type='text'],
+.payload__field input[type='email'],
+.payload__field input[type='password'],
+.payload__field input[type='number'],
+.payload__field textarea,
+.react-select__control,
+.field-type input[type='text'],
+.field-type input[type='email'],
+.field-type input[type='password'],
+.field-type textarea {
+  border-radius: 10px !important;
+  padding: 0.85rem 1rem !important;
+  border: 1px solid var(--theme-elevation-150) !important;
+  background-color: var(--theme-elevation-0) !important;
+  color: var(--theme-elevation-800) !important;
+  font-size: 0.95rem !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+}
+
+.payload__field input:focus,
+.payload__field textarea:focus,
+.react-select__control--is-focused,
+.field-type input:focus,
+.field-type textarea:focus {
+  border-color: var(--kubera-blue) !important;
+  background-color: var(--theme-elevation-0) !important;
+  box-shadow: 0 0 0 4px var(--kubera-blue-light), inset 0 2px 4px rgba(0,0,0,0.01) !important;
+  outline: none !important;
+}
+
+.field-label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--theme-elevation-400) !important;
+  margin-bottom: 0.6rem !important;
+}
+
+/* Dashboard & Cards */
+.dashboard__card,
+.card,
+.collection-edit,
+.form {
+  background: var(--theme-elevation-0) !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--theme-elevation-100) !important;
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05), 0 4px 10px -5px rgba(0,0,0,0.02) !important;
+  padding: 2.5rem !important;
+  margin-top: 1rem !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+.card:hover, .dashboard__card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08), 0 8px 16px -5px rgba(0,0,0,0.03) !important;
+}
+
+/* Table / List views */
+.table {
+  background: var(--theme-elevation-0) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--theme-elevation-100) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+}
+.table th {
+  background: var(--theme-elevation-50) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em !important;
+  color: var(--theme-elevation-400) !important;
+  padding: 1rem !important;
+}
+.table td {
+  padding: 1rem !important;
+  border-top: 1px solid var(--theme-elevation-100) !important;
+  color: var(--theme-elevation-800) !important;
+}
+.table tr:hover td {
+  background-color: var(--theme-elevation-50) !important;
+}
+
+/* Buttons */
+.btn--style-primary {
+  background-color: var(--kubera-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 0.85rem 1.5rem !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-family: var(--font-heading) !important;
+}
+.btn--style-primary:hover {
+  background-color: var(--kubera-blue-hover) !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+.btn--style-secondary {
+  background-color: var(--theme-elevation-100) !important;
+  color: var(--theme-elevation-800) !important;
+  border: 1px solid var(--theme-elevation-200) !important;
+  border-radius: 10px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+.btn--style-secondary:hover {
+  background-color: var(--theme-elevation-200) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--theme-elevation-200) !important;
+  border-radius: 10px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-elevation-300) !important;
+}
+
+/* Pro Pill Badges */
+.badge {
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 20px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
