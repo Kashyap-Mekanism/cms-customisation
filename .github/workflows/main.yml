@@ -73,23 +73,16 @@ jobs:
         run: pnpm run build
 
 
-  # ==========================================================
-  # 2. VERCEL BUILD + DEPLOYMENT
+    # ==========================================================
+  # 2. VERCEL BUILD + DEPLOY
   # ==========================================================
   deploy:
     name: Build and Deploy to Vercel
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # Vercel job starts ONLY after GitHub build succeeds.
-    # --------------------------------------------------------
+    # Run only after GitHub build succeeds
     needs: build
 
-    # --------------------------------------------------------
-    # Only deploy a PUSH to main.
-    #
-    # Pull requests run the build job only.
-    # --------------------------------------------------------
+    # Deploy only pushes to main
     if: >
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
@@ -103,34 +96,32 @@ jobs:
 
     steps:
 
-      # ------------------------------------------------------
-      # Checkout source code
-      # ------------------------------------------------------
+      # --------------------------------------------------------
+      # Checkout repository
+      # --------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       # Setup Node.js
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
 
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       # Install Vercel CLI
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
 
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       # Verify Vercel secrets
-      #
-      # This does NOT print the actual secret values.
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       - name: Verify Vercel configuration
         run: |
           echo "Checking Vercel configuration..."
@@ -153,15 +144,43 @@ jobs:
           echo "VERCEL_TOKEN is available"
           echo "VERCEL_ORG_ID is available"
           echo "VERCEL_PROJECT_ID is available"
-          echo "Vercel configuration is ready"
 
 
-      # ------------------------------------------------------
-      # Pull Vercel Production Environment
+      # --------------------------------------------------------
+      # Create Vercel project configuration
       #
-      # VERCEL_ORG_ID and VERCEL_PROJECT_ID are provided
-      # through the environment above.
-      # ------------------------------------------------------
+      # This creates the .vercel directory ONLY on the
+      # GitHub Actions runner.
+      #
+      # It is NOT committed to GitHub.
+      # --------------------------------------------------------
+      - name: Configure Vercel project
+        run: |
+          mkdir -p .vercel
+
+          cat > .vercel/project.json <<EOF
+          {
+            "projectId": "$VERCEL_PROJECT_ID",
+            "orgId": "$VERCEL_ORG_ID"
+          }
+          EOF
+
+          echo "Vercel project configuration created"
+
+
+      # --------------------------------------------------------
+      # Verify generated Vercel configuration
+      # --------------------------------------------------------
+      - name: Verify Vercel project configuration
+        run: |
+          echo "Vercel project configuration:"
+
+          cat .vercel/project.json
+
+
+      # --------------------------------------------------------
+      # Pull Vercel production environment
+      # --------------------------------------------------------
       - name: Pull Vercel environment
         run: |
           vercel pull \
@@ -170,17 +189,11 @@ jobs:
             --token="$VERCEL_TOKEN"
 
 
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       # SECOND BUILD
       #
-      # This build is performed by the Vercel CLI.
-      #
-      # If this fails:
-      #
-      # GitHub Build  ✅
-      # Vercel Build  ❌
-      # Deployment    ⏭️ SKIPPED
-      # ------------------------------------------------------
+      # Vercel builds the application.
+      # --------------------------------------------------------
       - name: Build with Vercel
         run: |
           vercel build \
@@ -188,14 +201,11 @@ jobs:
             --token="$VERCEL_TOKEN"
 
 
-      # ------------------------------------------------------
+      # --------------------------------------------------------
       # DEPLOY
       #
-      # This runs ONLY when "Build with Vercel" succeeds.
-      #
-      # --prebuilt deploys the artifacts generated by
-      # the previous "vercel build".
-      # ------------------------------------------------------
+      # Runs only if Vercel build succeeds.
+      # --------------------------------------------------------
       - name: Deploy to Vercel
         run: |
           vercel deploy \
