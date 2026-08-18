@@ -5,35 +5,25 @@ on:
     branches:
       - main
 
-  pull_request:
-    branches:
-      - main
-
 # ======================================================
 # Global environment
 # ======================================================
 env:
-  NODE_VERSION: "24"
-
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
-
   # ======================================================
-  # Vercel Production Deployment
+  # Production Deployment
   # ======================================================
   deploy:
-    name: Build & Deploy to Vercel
+    name: Deploy to Vercel
     runs-on: ubuntu-latest
 
-    # ----------------------------------------------------
-    # Production deployment only for push to main
-    # ----------------------------------------------------
+    # Deploy only when code is pushed to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-
       # --------------------------------------------------
       # Checkout repository
       # --------------------------------------------------
@@ -42,18 +32,17 @@ jobs:
 
       # --------------------------------------------------
       # Setup Node.js
+      #
+      # This Node.js is ONLY used to run the Vercel CLI.
+      # GitHub does NOT build the application.
       # --------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
 
       # --------------------------------------------------
       # Install Vercel CLI
-      #
-      # NOTE:
-      # We are NOT installing project dependencies here.
-      # Vercel will install pnpm dependencies during build.
       # --------------------------------------------------
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -69,46 +58,30 @@ jobs:
             --token="$VERCEL_TOKEN"
 
       # --------------------------------------------------
-      # Pull Vercel production environment
+      # Build and Deploy on Vercel
       #
-      # This downloads the Vercel project/environment
-      # configuration required for the Vercel build.
-      # --------------------------------------------------
-      - name: Pull Vercel production environment
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel pull \
-            --yes \
-            --environment=production \
-            --token="$VERCEL_TOKEN"
-
-      # --------------------------------------------------
-      # BUILD ON VERCEL
+      # IMPORTANT:
+      # Do NOT use:
+      #   vercel pull
+      #   vercel build
+      #   vercel deploy --prebuilt
       #
-      # No pnpm install
-      # No pnpm build
-      # No Next.js build
-      # No Payload build
+      # "vercel deploy --prod" sends the source to Vercel.
+      # Vercel then performs:
       #
-      # Vercel performs the complete build.
+      #   1. Install dependencies
+      #   2. Read Vercel environment variables
+      #   3. Setup Node.js
+      #   4. Setup pnpm
+      #   5. Build Next.js
+      #   6. Build Payload CMS
+      #   7. Deploy to production
       # --------------------------------------------------
-      - name: Build on Vercel
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel build \
-            --prod \
-            --token="$VERCEL_TOKEN"
-
-      # --------------------------------------------------
-      # DEPLOY PREBUILT ARTIFACTS TO VERCEL
-      # --------------------------------------------------
-      - name: Deploy to Vercel
+      - name: Build and Deploy on Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           vercel deploy \
-            --prebuilt \
             --prod \
+            --yes \
             --token="$VERCEL_TOKEN"
