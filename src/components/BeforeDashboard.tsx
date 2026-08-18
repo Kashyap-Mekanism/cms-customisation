@@ -71,7 +71,7 @@ export const BeforeDashboard: React.FC = () => {
             color: 'var(--theme-elevation-1000)',
           }}
         >
-          Good morning. Here is today's overview.
+          Good morning. Here is the overview for today.
         </h2>
         <p
           style={{

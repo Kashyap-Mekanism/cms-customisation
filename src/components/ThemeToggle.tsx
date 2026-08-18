@@ -5,20 +5,15 @@ import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
+  const { setTheme, resolvedTheme } = useTheme()
 
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
+  if (!resolvedTheme) {
     return <div style={{ width: 40, height: 40 }} />
   }
 
   return (
     <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
       style={{
         background: 'transparent',
         border: '1px solid var(--border)',
@@ -33,7 +28,7 @@ export function ThemeToggle() {
       }}
       aria-label="Toggle theme"
     >
-      {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+      {resolvedTheme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
     </button>
   )
 }

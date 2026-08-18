@@ -2,11 +2,16 @@
 
 import React from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 
 interface WelcomePageProps {
-  user: any
-  payloadConfig: any
+  user?: {
+    email: string
+  } | null
+  payloadConfig: {
+    routes: {
+      admin: string
+    }
+  }
 }
 
 export const WelcomePage: React.FC<WelcomePageProps> = ({ user, payloadConfig }) => {
@@ -161,7 +166,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ user, payloadConfig })
       {/* User Status Section */}
       {user ? (
         <section className="user-status">
-          <h3>You're All Set!</h3>
+          <h3>You are all set!</h3>
           <p>Your account is active and you can start managing content immediately.</p>
           <p className="user-email">
             Email: <strong>{user.email}</strong>
