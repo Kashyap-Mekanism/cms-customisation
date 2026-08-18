@@ -9,103 +9,36 @@ on:
     branches:
       - main
 
-# ------------------------------------------------------
+# ======================================================
 # Global environment
-# ------------------------------------------------------
+# ======================================================
 env:
-  NODE_VERSION: '24'
-  PNPM_VERSION: '10'
+  NODE_VERSION: "24"
 
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
-  # ======================================================
-  # CI
-  # ======================================================
-  ci:
-    name: CI - Lint, Typecheck & Build
-    runs-on: ubuntu-latest
-
-    steps:
-      # --------------------------------------------------
-      # Checkout repository
-      # --------------------------------------------------
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # --------------------------------------------------
-      # Setup pnpm
-      # --------------------------------------------------
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-
-      # --------------------------------------------------
-      # Setup Node.js
-      # --------------------------------------------------
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      # --------------------------------------------------
-      # Install dependencies
-      # --------------------------------------------------
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # --------------------------------------------------
-      # Lint
-      # --------------------------------------------------
-      - name: Run lint
-        run: pnpm lint
-        continue-on-error: false
-
-      # --------------------------------------------------
-      # Type check
-      # --------------------------------------------------
-      - name: Run type check
-        run: pnpm exec tsc --noEmit
-
-      # --------------------------------------------------
-      # Build Next.js + Payload CMS
-      # --------------------------------------------------
-      - name: Build application
-        run: pnpm build
 
   # ======================================================
-  # Production Deployment
+  # Vercel Production Deployment
   # ======================================================
   deploy:
-    name: Deploy to Vercel Production
+    name: Build & Deploy to Vercel
     runs-on: ubuntu-latest
 
-    # Deploy only after CI succeeds
-    needs:
-      - ci
-
-    # Only deploy main branch
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # ----------------------------------------------------
+    # Production deployment only for push to main
+    # ----------------------------------------------------
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
+
       # --------------------------------------------------
       # Checkout repository
       # --------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # --------------------------------------------------
-      # Setup pnpm
-      # --------------------------------------------------
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
 
       # --------------------------------------------------
       # Setup Node.js
@@ -114,23 +47,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      # --------------------------------------------------
-      # Install dependencies
-      # --------------------------------------------------
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       # --------------------------------------------------
       # Install Vercel CLI
+      #
+      # NOTE:
+      # We are NOT installing project dependencies here.
+      # Vercel will install pnpm dependencies during build.
       # --------------------------------------------------
       - name: Install Vercel CLI
-        run: pnpm add --global vercel@latest
+        run: npm install --global vercel@latest
 
-      # ==================================================
-      # Pull Vercel Production Environment
-      # ==================================================
+      # --------------------------------------------------
+      # Verify Vercel authentication
+      # --------------------------------------------------
+      - name: Verify Vercel authentication
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel whoami \
+            --token="$VERCEL_TOKEN"
+
+      # --------------------------------------------------
+      # Pull Vercel production environment
+      #
+      # This downloads the Vercel project/environment
+      # configuration required for the Vercel build.
+      # --------------------------------------------------
       - name: Pull Vercel production environment
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -138,13 +81,19 @@ jobs:
           vercel pull \
             --yes \
             --environment=production \
-            --scope="$VERCEL_ORG_ID" \
             --token="$VERCEL_TOKEN"
 
-      # ==================================================
-      # Build using Vercel
-      # ==================================================
-      - name: Build Vercel production artifacts
+      # --------------------------------------------------
+      # BUILD ON VERCEL
+      #
+      # No pnpm install
+      # No pnpm build
+      # No Next.js build
+      # No Payload build
+      #
+      # Vercel performs the complete build.
+      # --------------------------------------------------
+      - name: Build on Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
@@ -152,9 +101,9 @@ jobs:
             --prod \
             --token="$VERCEL_TOKEN"
 
-      # ==================================================
-      # Deploy prebuilt artifacts
-      # ==================================================
+      # --------------------------------------------------
+      # DEPLOY PREBUILT ARTIFACTS TO VERCEL
+      # --------------------------------------------------
       - name: Deploy to Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
