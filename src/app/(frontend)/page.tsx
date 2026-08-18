@@ -12,5 +12,10 @@ export default async function HomePage() {
   const payload = await getPayload({ config: payloadConfig })
   const { user } = await payload.auth({ headers })
 
-  return <WelcomePage user={user} payloadConfig={payloadConfig} />
+  // Extract only serializable data for client component
+  const serializedConfig = {
+    adminUrl: payloadConfig.routes.admin,
+  }
+
+  return <WelcomePage user={user} config={serializedConfig} />
 }

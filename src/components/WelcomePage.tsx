@@ -7,14 +7,12 @@ interface WelcomePageProps {
   user?: {
     email: string
   } | null
-  payloadConfig: {
-    routes: {
-      admin: string
-    }
+  config: {
+    adminUrl: string
   }
 }
 
-export const WelcomePage: React.FC<WelcomePageProps> = ({ user, payloadConfig }) => {
+export const WelcomePage: React.FC<WelcomePageProps> = ({ user, config }) => {
   return (
     <div className="welcome-page">
       {/* Hero Section */}
@@ -50,7 +48,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ user, payloadConfig })
         <h2>Quick Actions</h2>
         <div className="actions-grid">
           <a
-            href={payloadConfig.routes.admin}
+            href={config.adminUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="action-card admin-card"
@@ -177,7 +175,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ user, payloadConfig })
           <h3>Want Full Access?</h3>
           <p>Log in to your account to unlock additional features and manage content.</p>
           <a
-            href={payloadConfig.routes.admin}
+            href={config.adminUrl}
             className="login-button"
             target="_blank"
             rel="noopener noreferrer"
