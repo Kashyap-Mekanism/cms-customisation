@@ -177,6 +177,14 @@ jobs:
           echo "Project ID length: ${#VERCEL_PROJECT_ID}"
           echo "Organization ID length: ${#VERCEL_ORG_ID}"
 
+          - name: Verify Vercel project access
+  run: |
+    echo "Checking Vercel project..."
+
+    vercel project inspect "$VERCEL_PROJECT_ID" \
+      --scope="$VERCEL_ORG_ID" \
+      --token="$VERCEL_TOKEN"
+
 
       # --------------------------------------------------------
       # Pull Vercel production environment
