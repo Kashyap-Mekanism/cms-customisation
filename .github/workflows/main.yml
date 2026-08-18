@@ -9,209 +9,157 @@ on:
     branches:
       - main
 
+# ------------------------------------------------------
+# Global environment
+# ------------------------------------------------------
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '10'
+
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
-
-  # ==========================================================
-  # 1. GITHUB CI BUILD
-  # ==========================================================
-  build:
-    name: Build Application
+  # ======================================================
+  # CI
+  # ======================================================
+  ci:
+    name: CI - Lint, Typecheck & Build
     runs-on: ubuntu-latest
 
     steps:
-
-      # --------------------------------------------------------
+      # --------------------------------------------------
       # Checkout repository
-      # --------------------------------------------------------
-      - name: Checkout repository
+      # --------------------------------------------------
+      - name: Checkout code
         uses: actions/checkout@v4
 
-
-      # --------------------------------------------------------
+      # --------------------------------------------------
       # Setup pnpm
-      # --------------------------------------------------------
+      # --------------------------------------------------
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: ${{ env.PNPM_VERSION }}
           run_install: false
 
-
-      # --------------------------------------------------------
+      # --------------------------------------------------
       # Setup Node.js
-      # --------------------------------------------------------
+      # --------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-
-      # --------------------------------------------------------
+      # --------------------------------------------------
       # Install dependencies
-      # --------------------------------------------------------
+      # --------------------------------------------------
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # --------------------------------------------------
+      # Lint
+      # --------------------------------------------------
+      - name: Run lint
+        run: pnpm lint
+        continue-on-error: false
 
-      # --------------------------------------------------------
-      # Build application
-      # --------------------------------------------------------
+      # --------------------------------------------------
+      # Type check
+      # --------------------------------------------------
+      - name: Run type check
+        run: pnpm exec tsc --noEmit
+
+      # --------------------------------------------------
+      # Build Next.js + Payload CMS
+      # --------------------------------------------------
       - name: Build application
-        run: pnpm run build
+        run: pnpm build
 
-
-  # ==========================================================
-  # 2. VERCEL BUILD + DEPLOYMENT
-  # ==========================================================
+  # ======================================================
+  # Production Deployment
+  # ======================================================
   deploy:
-    name: Build and Deploy to Vercel
-
-    # Deploy only after GitHub build succeeds
-    needs: build
-
-    # Deploy only when pushing to main
-    if: >
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main'
-
+    name: Deploy to Vercel Production
     runs-on: ubuntu-latest
 
-    # --------------------------------------------------------
-    # Vercel configuration
-    #
-    # GitHub Repository Secrets:
-    #
-    # VERCEL_TOKEN
-    # VERCEL_ORG_ID
-    # VERCEL_PROJECT_ID
-    # --------------------------------------------------------
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    # Deploy only after CI succeeds
+    needs:
+      - ci
+
+    # Only deploy main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-
-      # ======================================================
+      # --------------------------------------------------
       # Checkout repository
-      # ======================================================
-      - name: Checkout repository
+      # --------------------------------------------------
+      - name: Checkout code
         uses: actions/checkout@v4
 
+      # --------------------------------------------------
+      # Setup pnpm
+      # --------------------------------------------------
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
 
-      # ======================================================
+      # --------------------------------------------------
       # Setup Node.js
-      # ======================================================
+      # --------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
+      # --------------------------------------------------
+      # Install dependencies
+      # --------------------------------------------------
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      # ======================================================
+      # --------------------------------------------------
       # Install Vercel CLI
-      # ======================================================
+      # --------------------------------------------------
       - name: Install Vercel CLI
-        run: |
-          npm install --global vercel@59.1.3
+        run: pnpm add --global vercel@latest
 
-
-      # ======================================================
-      # Verify Vercel secrets
-      # ======================================================
-      - name: Verify Vercel configuration
-        shell: bash
-        run: |
-          set -e
-
-          echo "Checking Vercel configuration..."
-
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "ERROR: VERCEL_TOKEN is missing"
-            exit 1
-          fi
-
-          if [ -z "$VERCEL_ORG_ID" ]; then
-            echo "ERROR: VERCEL_ORG_ID is missing"
-            exit 1
-          fi
-
-          if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "ERROR: VERCEL_PROJECT_ID is missing"
-            exit 1
-          fi
-
-          echo "VERCEL_TOKEN: available"
-          echo "VERCEL_ORG_ID: available"
-          echo "VERCEL_PROJECT_ID: available"
-
-
-      # ======================================================
-      # Safe identifier verification
-      # ======================================================
-      - name: Verify Vercel project identifiers
-        shell: bash
-        run: |
-          echo "Project ID prefix:"
-          echo "$VERCEL_PROJECT_ID" | cut -c1-4
-
-          echo "Organization ID prefix:"
-          echo "$VERCEL_ORG_ID" | cut -c1-5
-
-          echo "Project ID length: ${#VERCEL_PROJECT_ID}"
-          echo "Organization ID length: ${#VERCEL_ORG_ID}"
-
-
-      # ======================================================
-      # Pull Vercel production environment
-      # ======================================================
+      # ==================================================
+      # Pull Vercel Production Environment
+      # ==================================================
       - name: Pull Vercel production environment
-        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          set -e
-
-          echo "Pulling Vercel production environment..."
-
           vercel pull \
             --yes \
             --environment=production \
+            --scope="$VERCEL_ORG_ID" \
             --token="$VERCEL_TOKEN"
 
-          echo "Vercel production environment pulled successfully."
-
-
-      # ======================================================
+      # ==================================================
       # Build using Vercel
-      # ======================================================
-      - name: Build with Vercel
-        shell: bash
+      # ==================================================
+      - name: Build Vercel production artifacts
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          set -e
-
-          echo "Building application with Vercel..."
-
           vercel build \
             --prod \
             --token="$VERCEL_TOKEN"
 
-          echo "Vercel build completed successfully."
-
-
-      # ======================================================
-      # Deploy prebuilt application
-      # ======================================================
+      # ==================================================
+      # Deploy prebuilt artifacts
+      # ==================================================
       - name: Deploy to Vercel
-        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          set -e
-
-          echo "Deploying application to Vercel..."
-
           vercel deploy \
             --prebuilt \
             --prod \
             --token="$VERCEL_TOKEN"
-
-          echo "Deployment completed successfully."
