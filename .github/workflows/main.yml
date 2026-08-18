@@ -56,13 +56,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # FIRST BUILD
-      #
-      # This build happens inside GitHub Actions.
-      #
-      # If this fails:
-      #   GitHub Build ❌
-      #   Vercel       ⏭️ SKIPPED
+      # Build application
       # --------------------------------------------------------
       - name: Build application
         run: pnpm run build
@@ -74,70 +68,64 @@ jobs:
   deploy:
     name: Build and Deploy to Vercel
 
-    # --------------------------------------------------------
-    # Deploy job only starts if GitHub build succeeds
-    # --------------------------------------------------------
+    # Deploy only if GitHub build succeeds
     needs: build
 
-    # --------------------------------------------------------
-    # Only deploy pushes to main
-    #
-    # Pull requests only run the build job.
-    # --------------------------------------------------------
+    # Deploy only on push to main
     if: >
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
 
     runs-on: ubuntu-latest
 
+    # --------------------------------------------------------
+    # Vercel environment variables
+    #
+    # GitHub Repository Secrets required:
+    #
+    # VERCEL_TOKEN
+    # VERCEL_ORG_ID
+    # VERCEL_PROJECT_ID
+    # --------------------------------------------------------
     env:
-
-      # ------------------------------------------------------
-      # Vercel credentials
-      # ------------------------------------------------------
-
-      # Vercel Access Token
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-      # Vercel account/team ID
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-
-      # Vercel project ID
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
 
     steps:
 
-      # --------------------------------------------------------
+      # ======================================================
       # Checkout repository
-      # --------------------------------------------------------
+      # ======================================================
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # --------------------------------------------------------
+      # ======================================================
       # Setup Node.js
-      # --------------------------------------------------------
+      # ======================================================
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
 
-      # --------------------------------------------------------
+      # ======================================================
       # Install Vercel CLI
-      # --------------------------------------------------------
+      # ======================================================
       - name: Install Vercel CLI
-        run: npm install --global vercel@59.1.3
-
-
-      # --------------------------------------------------------
-      # Verify Vercel credentials
-      #
-      # We never print the actual secret values.
-      # --------------------------------------------------------
-      - name: Verify Vercel configuration
         run: |
+          npm install --global vercel@59.1.3
+
+
+      # ======================================================
+      # Verify Vercel configuration
+      # ======================================================
+      - name: Verify Vercel configuration
+        shell: bash
+        run: |
+          set -e
+
           echo "Checking Vercel configuration..."
 
           if [ -z "$VERCEL_TOKEN" ]; then
@@ -160,79 +148,109 @@ jobs:
           echo "VERCEL_PROJECT_ID: available"
 
 
-      # --------------------------------------------------------
-      # Show safe ID information
-      #
-      # Does NOT expose complete IDs.
-      # Useful for debugging.
-      # --------------------------------------------------------
+      # ======================================================
+      # Verify project identifiers safely
+      # ======================================================
       - name: Verify Vercel project identifiers
+        shell: bash
         run: |
-          echo "Project ID prefix:"
+          echo "Vercel Project ID prefix:"
           echo "$VERCEL_PROJECT_ID" | cut -c1-4
 
-          echo "Organization ID prefix:"
+          echo "Vercel Organization ID prefix:"
           echo "$VERCEL_ORG_ID" | cut -c1-5
 
           echo "Project ID length: ${#VERCEL_PROJECT_ID}"
           echo "Organization ID length: ${#VERCEL_ORG_ID}"
 
-          - name: Verify Vercel project access
-  run: |
-    echo "Checking Vercel project..."
 
-    vercel project inspect "$VERCEL_PROJECT_ID" \
-      --scope="$VERCEL_ORG_ID" \
-      --token="$VERCEL_TOKEN"
+      # ======================================================
+      # Verify Vercel project access
+      #
+      # This is intentionally before `vercel pull`.
+      #
+      # If this step fails with:
+      #
+      #   Project not found
+      #
+      # then the problem is with:
+      #
+      #   VERCEL_TOKEN
+      #   VERCEL_ORG_ID
+      #   VERCEL_PROJECT_ID
+      #   OR token/team permissions
+      #
+      # and NOT your application build.
+      # ======================================================
+      - name: Verify Vercel project access
+        shell: bash
+        run: |
+          set -e
+
+          echo "Checking access to Vercel project..."
+
+          vercel project inspect "$VERCEL_PROJECT_ID" \
+            --scope="$VERCEL_ORG_ID" \
+            --token="$VERCEL_TOKEN"
+
+          echo "Vercel project access verified successfully."
 
 
-      # --------------------------------------------------------
+      # ======================================================
       # Pull Vercel production environment
       #
-      # This retrieves Vercel project settings and the
-      # production environment configuration needed by
-      # the Vercel CLI build.
-      # --------------------------------------------------------
+      # Downloads the production environment configuration
+      # for the selected Vercel project.
+      # ======================================================
       - name: Pull Vercel production environment
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
         run: |
+          set -e
+
+          echo "Pulling Vercel production environment..."
+
           vercel pull \
             --yes \
             --environment=production \
             --token="$VERCEL_TOKEN"
 
+          echo "Vercel production environment pulled successfully."
 
-      # --------------------------------------------------------
-      # SECOND BUILD
+
+      # ======================================================
+      # Vercel Build
       #
-      # Vercel CLI creates the Vercel build artifacts.
-      #
-      # If this fails:
-      #
-      # GitHub Build  ✅
-      # Vercel Build  ❌
-      # Deployment    ⏭️ SKIPPED
-      # --------------------------------------------------------
+      # Creates Vercel's prebuilt deployment artifacts.
+      # ======================================================
       - name: Build with Vercel
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
         run: |
+          set -e
+
+          echo "Building application with Vercel..."
+
           vercel build \
             --prod \
             --token="$VERCEL_TOKEN"
 
+          echo "Vercel build completed successfully."
 
-      # --------------------------------------------------------
-      # DEPLOY
+
+      # ======================================================
+      # Deploy
       #
-      # This only executes if "Build with Vercel" succeeds.
-      # --------------------------------------------------------
+      # Deploys the artifacts generated by `vercel build`.
+      # ======================================================
       - name: Deploy to Vercel
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
         run: |
+          set -e
+
+          echo "Deploying application to Vercel..."
+
           vercel deploy \
             --prebuilt \
             --prod \
             --token="$VERCEL_TOKEN"
+
+          echo "Deployment completed successfully."
